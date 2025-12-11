@@ -82,6 +82,8 @@ class GameMenuActivity : RetrogradeComponentActivity() {
         val currentDisk: Int,
         val currentTiltConfiguration: TiltConfiguration,
         val allTiltConfigurations: List<TiltConfiguration>,
+        val controlsScale: Float,
+        val controlsOpacity: Float,
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,6 +129,10 @@ class GameMenuActivity : RetrogradeComponentActivity() {
                     intent.serializable<Array<TiltConfiguration>>(GameMenuContract.EXTRA_TILT_ALL_CONFIGS)
                         ?.toList()
                         ?: emptyList(),
+                controlsScale =
+                    extras?.getFloat(GameMenuContract.EXTRA_CONTROLS_SCALE, 1.0f) ?: 1.0f,
+                controlsOpacity =
+                    extras?.getFloat(GameMenuContract.EXTRA_CONTROLS_OPACITY, 1.0f) ?: 1.0f,
             )
 
         setContent {
@@ -224,6 +230,12 @@ class GameMenuActivity : RetrogradeComponentActivity() {
                                 factory = GameMenuCoreOptionsViewModel.Factory(inputDeviceManager),
                             ),
                             gameMenuRequest,
+                        )
+                    }
+                    composable(GameMenuRoute.LAYOUT) {
+                        com.swordfish.lemuroid.app.mobile.feature.gamemenu.layout.GameMenuLayoutScreen(
+                            gameMenuRequest,
+                            ::onResult
                         )
                     }
                 }

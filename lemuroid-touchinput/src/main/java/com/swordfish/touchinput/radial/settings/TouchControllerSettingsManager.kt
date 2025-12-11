@@ -29,6 +29,7 @@ class TouchControllerSettingsManager(private val sharedPreferences: SharedPrefer
         val rotation: Float = DEFAULT_ROTATION,
         val marginX: Float = DEFAULT_MARGIN_X,
         val marginY: Float = DEFAULT_MARGIN_Y,
+        val opacity: Float = DEFAULT_OPACITY,
         val elements: Map<String, ElementSettings> = emptyMap(),
     )
 
@@ -74,6 +75,7 @@ class TouchControllerSettingsManager(private val sharedPreferences: SharedPrefer
                 rotation = DEFAULT_ROTATION,
                 marginX = horizontalPadding.value / MAX_MARGINS,
                 marginY = verticalPadding.value / MAX_MARGINS,
+                opacity = DEFAULT_OPACITY,
             )
         val settingsKey = getPreferenceString(touchControllerID, orientation)
         val cachedStateFlow =
@@ -131,6 +133,7 @@ class TouchControllerSettingsManager(private val sharedPreferences: SharedPrefer
         const val DEFAULT_ROTATION = 0.0f
         const val DEFAULT_MARGIN_X = 0.0f
         const val DEFAULT_MARGIN_Y = 0.0f
+        const val DEFAULT_OPACITY = 1.0f
 
         const val MAX_ROTATION = 45f
         const val MIN_SCALE = 0.75f

@@ -216,6 +216,14 @@ abstract class BaseGameActivity : ImmersiveActivity() {
                 this.putExtra(GameMenuContract.EXTRA_CURRENT_TILT_CONFIG, currentTiltConfiguration)
                 // TODO PADS... Make sure to avoid passing this if a physical pad is connected.
                 this.putExtra(GameMenuContract.EXTRA_TILT_ALL_CONFIGS, tiltConfigurations.toTypedArray())
+                this.putExtra(
+                    GameMenuContract.EXTRA_CONTROLS_SCALE,
+                    baseGameScreenViewModel.getTouchControllerSettings()?.scale ?: 1.0f,
+                )
+                this.putExtra(
+                    GameMenuContract.EXTRA_CONTROLS_OPACITY,
+                    baseGameScreenViewModel.getTouchControllerSettings()?.opacity ?: 1.0f,
+                )
             }
         startActivityForResult(intent, DIALOG_REQUEST)
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
@@ -395,6 +403,16 @@ abstract class BaseGameActivity : ImmersiveActivity() {
             if (data?.hasExtra(GameMenuContract.RESULT_CHANGE_TILT_CONFIG) == true) {
                 val tiltConfig = data.serializable<TiltConfiguration>(GameMenuContract.RESULT_CHANGE_TILT_CONFIG)
                 baseGameScreenViewModel.changeTiltConfiguration(tiltConfig!!)
+            }
+            if (data?.hasExtra(GameMenuContract.RESULT_CHANGE_LAYOUT_SETTINGS) == true) {
+                val scale = data.getFloatExtra(GameMenuContract.EXTRA_CONTROLS_SCALE, 1.0f)
+                val opacity = data.getFloatExtra(GameMenuContract.EXTRA_CONTROLS_OPACITY, 1.0f)
+                baseGameScreenViewModel.updateTouchControllerSettings(
+                    baseGameScreenViewModel.getTouchControllerSettings()?.copy(
+                        scale = scale,
+                        opacity = opacity
+                    )!!
+                )
             }
         }
     }

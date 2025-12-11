@@ -141,6 +141,17 @@ fun GameMenuHomeScreen(
             },
         )
 
+        LemuroidSettingsMenuLink(
+            title = { Text(text = stringResource(id = R.string.game_menu_layout)) },
+            icon = {
+                Icon(
+                    painterResource(R.drawable.ic_menu_controls),
+                    contentDescription = stringResource(id = R.string.game_menu_layout),
+                )
+            },
+            onClick = { navController.navigateToRoute(GameMenuRoute.LAYOUT) },
+        )
+
         if (gameMenuRequest.advancedCoreOptions.isNotEmpty() || gameMenuRequest.coreOptions.isNotEmpty()) {
             LemuroidSettingsMenuLink(
                 title = { Text(text = stringResource(id = R.string.game_menu_settings)) },
