@@ -128,6 +128,16 @@ class TouchControllerSettingsManager(private val sharedPreferences: SharedPrefer
         }
     }
 
+    fun getCurrentSettings(
+        touchControllerID: TouchControllerID,
+        orientation: Orientation,
+    ): Settings {
+        val settingsKey = getPreferenceString(touchControllerID, orientation)
+        return sharedPreferences.getString(settingsKey, null)
+            ?.let { Json.decodeFromString(Settings.serializer(), it) }
+            ?: Settings()
+    }
+
     companion object {
         const val DEFAULT_SCALE = 0.5f
         const val DEFAULT_ROTATION = 0.0f

@@ -78,6 +78,13 @@ class GameViewModelTouchControls(
             }
     }
 
+    fun getTouchControllerSettings(): TouchControllerSettingsManager.Settings {
+        return touchControllerSettingsManager.getCurrentSettings(
+            touchControlId.value,
+            screenOrientation.value,
+        )
+    }
+
     fun getTouchHapticFeedbackMode(): Flow<HapticFeedbackMode> {
         return hapticFeedbackMode
     }

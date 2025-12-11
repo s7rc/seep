@@ -172,6 +172,10 @@ class BaseGameScreenViewModel(
         return touchControls.getTouchControlsSettings(density, insets)
     }
 
+    fun getTouchControllerSettings(): TouchControllerSettingsManager.Settings? {
+        return touchControls.getTouchControllerSettings()
+    }
+
     fun getTouchHapticFeedbackMode(): Flow<HapticFeedbackMode> {
         return touchControls.getTouchHapticFeedbackMode()
     }
