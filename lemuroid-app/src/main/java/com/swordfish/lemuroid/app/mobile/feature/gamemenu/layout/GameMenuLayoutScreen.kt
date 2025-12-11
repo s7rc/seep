@@ -3,21 +3,16 @@ package com.swordfish.lemuroid.app.mobile.feature.gamemenu.layout
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Opacity
-import androidx.compose.material.icons.filled.ZoomOutMap
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.swordfish.lemuroid.R
 import com.swordfish.lemuroid.app.mobile.feature.gamemenu.GameMenuActivity
 import com.swordfish.lemuroid.app.shared.GameMenuContract
-import com.swordfish.lemuroid.app.utils.android.settings.LemuroidSettingsIcon
-import com.swordfish.lemuroid.app.utils.android.settings.LemuroidSettingsTitle
 
 @Composable
 fun GameMenuLayoutScreen(
@@ -33,7 +28,11 @@ fun GameMenuLayoutScreen(
     ) {
         // Scale Setting
         Column {
-            LemuroidSettingsTitle(text = "Button Scale: \${String.format(\"%.2f\", scale.floatValue)}")
+            Text(
+                text = "Button Scale: ${String.format("%.2f", scale.floatValue)}",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Slider(
                 value = scale.floatValue,
                 onValueChange = {
@@ -51,7 +50,11 @@ fun GameMenuLayoutScreen(
 
         // Opacity Setting
         Column {
-            LemuroidSettingsTitle(text = "Button Opacity: \${String.format(\"%.2f\", opacity.floatValue * 100)}%")
+            Text(
+                text = "Button Opacity: ${String.format("%.0f", opacity.floatValue * 100)}%",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Slider(
                 value = opacity.floatValue,
                 onValueChange = {
