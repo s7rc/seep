@@ -30,6 +30,7 @@ class TouchControllerSettingsManager(private val sharedPreferences: SharedPrefer
         val marginX: Float = DEFAULT_MARGIN_X,
         val marginY: Float = DEFAULT_MARGIN_Y,
         val opacity: Float = DEFAULT_OPACITY,
+        val isFastForwardEnabled: Boolean = false,
         val elements: Map<String, ElementSettings> = emptyMap(),
     )
 
@@ -76,6 +77,7 @@ class TouchControllerSettingsManager(private val sharedPreferences: SharedPrefer
                 marginX = horizontalPadding.value / MAX_MARGINS,
                 marginY = verticalPadding.value / MAX_MARGINS,
                 opacity = DEFAULT_OPACITY,
+                isFastForwardEnabled = false,
             )
         val settingsKey = getPreferenceString(touchControllerID, orientation)
         val cachedStateFlow =

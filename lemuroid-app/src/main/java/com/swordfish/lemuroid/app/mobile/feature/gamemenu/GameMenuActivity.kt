@@ -243,7 +243,7 @@ class GameMenuActivity : RetrogradeComponentActivity() {
                     composable(GameMenuRoute.LAYOUT) {
                         com.swordfish.lemuroid.app.mobile.feature.gamemenu.layout.GameMenuLayoutScreen(
                             gameMenuRequest,
-                            onSettingsParamsChanged = { scale, opacity ->
+                            onSettingsParamsChanged = { scale, opacity, isFastForwardEnabled ->
                                 // Update settings directly for live preview
                                 val controllerId = intent.getStringExtra(GameMenuContract.EXTRA_CONTROLLER_ID)
                                     ?.let { TouchControllerID.valueOf(it) } ?: TouchControllerID.GB
@@ -255,18 +255,15 @@ class GameMenuActivity : RetrogradeComponentActivity() {
                                     touchControllerSettingsManager.storeSettings(
                                         controllerId,
                                         orientation,
-                                        currentSettings.copy(scale = scale, opacity = opacity)
+                                        currentSettings.copy(scale = scale, opacity = opacity, isFastForwardEnabled = isFastForwardEnabled)
                                     )
                                 }
                                 
-                                // Also report back to activity on exit if needed, but live update makes it redundant for persistence.
-                                // However, BaseGameActivity might need to know to refresh its view model state if it doesn't observe purely.
-                                // But strictly speaking, if SettingsManager updates SharedPreferences, and the Game observes SharedPreferences, it should be fine.
-                                // For good measure, we can still set the result params so BaseGameActivity updates its local cache immediately if needed.
                                 onResult {
                                     putExtra(GameMenuContract.RESULT_CHANGE_LAYOUT_SETTINGS, true)
                                     putExtra(GameMenuContract.EXTRA_CONTROLS_SCALE, scale)
                                     putExtra(GameMenuContract.EXTRA_CONTROLS_OPACITY, opacity)
+                                    putExtra(GameMenuContract.EXTRA_CONTROLS_FAST_FORWARD, isFastForwardEnabled)
                                 }
                             }
                         )

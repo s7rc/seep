@@ -73,6 +73,20 @@ fun BaseLayoutRight(
         secondaryDialsBaseRotationInDegrees = -settings.rotation * TouchControllerSettingsManager.MAX_ROTATION,
         isLeft = false,
         primaryDial = primaryDial,
-        secondaryDials = secondaryDials,
+        secondaryDials = {
+            // Keep existing logic if any, strictly appending or matching context
+            // The file view showed explicit content for secondaryDials in BaseLayoutRight
+            secondaryDials()
+
+            if (settings.isFastForwardEnabled) {
+               com.swordfish.touchinput.radial.controls.LemuroidControlButton(
+                   modifier = Modifier.radialPosition(120f),
+                   id = gg.padkit.ids.Id.Key(android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD),
+                   icon = com.swordfish.touchinput.R.drawable.ic_fast_forward
+               )
+            }
+        },
+    )
+}
     )
 }

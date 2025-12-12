@@ -12,16 +12,18 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Switch
 import com.swordfish.lemuroid.app.mobile.feature.gamemenu.GameMenuActivity
 import com.swordfish.lemuroid.app.shared.GameMenuContract
 
 @Composable
 fun GameMenuLayoutScreen(
     gameMenuRequest: GameMenuActivity.GameMenuRequest,
-    onSettingsParamsChanged: (Float, Float) -> Unit,
+    onSettingsParamsChanged: (Float, Float, Boolean) -> Unit,
 ) {
     val scale = remember { mutableFloatStateOf(gameMenuRequest.controlsScale) }
     val opacity = remember { mutableFloatStateOf(gameMenuRequest.controlsOpacity) }
+    val isFastForwardEnabled = remember { androidx.compose.runtime.mutableStateOf(gameMenuRequest.isFastForwardEnabled) }
 
     androidx.compose.material3.Surface(
         modifier = Modifier.fillMaxSize(),
@@ -42,7 +44,7 @@ fun GameMenuLayoutScreen(
                     value = scale.floatValue,
                     onValueChange = {
                         scale.floatValue = it
-                        onSettingsParamsChanged(it, opacity.floatValue)
+                        onSettingsParamsChanged(it, opacity.floatValue, isFastForwardEnabled.value)
                     },
                     valueRange = 0.2f..2.0f,
                     steps = 17
@@ -60,11 +62,34 @@ fun GameMenuLayoutScreen(
                     value = opacity.floatValue,
                     onValueChange = {
                         opacity.floatValue = it
-                        onSettingsParamsChanged(scale.floatValue, it)
+                        onSettingsParamsChanged(scale.floatValue, it, isFastForwardEnabled.value)
                     },
                     valueRange = 0.1f..1.0f,
                     steps = 9
                 )
+            }
+
+            // Fast Forward Setting
+            if (gameMenuRequest.fastForwardSupported) {
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Show Fast Forward",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Switch(
+                        checked = isFastForwardEnabled.value,
+                        onCheckedChange = {
+                            isFastForwardEnabled.value = it
+                            onSettingsParamsChanged(scale.floatValue, opacity.floatValue, it)
+                        }
+                    )
+                }
+            }
             }
         }
     }
