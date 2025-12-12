@@ -34,7 +34,14 @@ fun LemuroidControlAnalog(
                     contentAlignment = Alignment.Center,
                 ) { LemuroidControlBackground(Modifier.fillMaxSize(0.8f)) }
             },
-            foreground = { LemuroidButtonForeground(modifier = Modifier.fillMaxSize(0.5f), pressed = it) },
+            foreground = {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LemuroidButtonForeground(modifier = Modifier.fillMaxSize(0.5f), pressed = it)
+                }
+            },
         )
     }
 }
