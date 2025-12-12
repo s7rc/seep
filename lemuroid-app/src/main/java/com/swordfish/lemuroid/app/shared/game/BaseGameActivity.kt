@@ -224,6 +224,13 @@ abstract class BaseGameActivity : ImmersiveActivity() {
                     GameMenuContract.EXTRA_CONTROLS_OPACITY,
                     baseGameScreenViewModel.getTouchControllerSettings()?.opacity ?: 1.0f,
                 )
+                this.putExtra(
+                    GameMenuContract.EXTRA_CONTROLLER_ID,
+                    baseGameScreenViewModel.getTouchControllerId(),
+                )
+                baseGameScreenViewModel.getScreenOrientation().let {
+                    this.putExtra(GameMenuContract.EXTRA_SCREEN_ORIENTATION, it)
+                }
             }
         startActivityForResult(intent, DIALOG_REQUEST)
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)

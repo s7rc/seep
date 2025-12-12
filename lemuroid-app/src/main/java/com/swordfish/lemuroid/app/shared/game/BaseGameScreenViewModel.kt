@@ -232,6 +232,9 @@ class BaseGameScreenViewModel(
         return touchControls.getTouchControllerConfig()
     }
 
+    fun getTouchControllerId() = touchControls.getTouchControllerId()
+    fun getScreenOrientation() = touchControls.getScreenOrientation()
+
     fun changeTiltConfiguration(tiltConfig: TiltConfiguration) {
         tilt.changeTiltConfiguration(tiltConfig)
     }

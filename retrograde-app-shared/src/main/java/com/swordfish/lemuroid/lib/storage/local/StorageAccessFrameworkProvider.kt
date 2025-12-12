@@ -38,19 +38,29 @@ class StorageAccessFrameworkProvider(private val context: Context) : StorageProv
     override val enabledByDefault = true
 
     override fun listBaseStorageFiles(): Flow<List<BaseStorageFile>> {
-        return getExternalFolder()?.let { folder ->
-            traverseDirectoryEntries(Uri.parse(folder))
-        } ?: emptyFlow()
+        return getExternalFolders().asFlow()
+            .flatMapMerge { folder ->
+                traverseDirectoryEntries(Uri.parse(folder))
+            }
     }
 
     override fun getStorageFile(baseStorageFile: BaseStorageFile): StorageFile? {
         return DocumentFileParser.parseDocumentFile(context, baseStorageFile)
     }
 
-    private fun getExternalFolder(): String? {
-        val prefString = context.getString(R.string.pref_key_extenral_folder)
-        val preferenceManager = SharedPreferencesHelper.getLegacySharedPreferences(context)
-        return preferenceManager.getString(prefString, null)
+    private fun getExternalFolders(): Set<String> {
+        val prefs = SharedPreferencesHelper.getLegacySharedPreferences(context)
+        val legacyKey = context.getString(R.string.pref_key_extenral_folder)
+        val collectionKey = context.getString(R.string.pref_key_external_folders)
+
+        val folders = prefs.getStringSet(collectionKey, emptySet()) ?: emptySet()
+        
+        return if (folders.isNotEmpty()) {
+            folders
+        } else {
+            val legacy = prefs.getString(legacyKey, null)
+            if (legacy != null) setOf(legacy) else emptySet()
+        }
     }
 
     private fun traverseDirectoryEntries(rootUri: Uri): Flow<List<BaseStorageFile>> =

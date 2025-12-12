@@ -57,6 +57,10 @@ import com.swordfish.lemuroid.lib.library.db.entity.Game
 import com.swordfish.lemuroid.lib.saves.StatesManager
 import com.swordfish.lemuroid.lib.saves.StatesPreviewManager
 import com.swordfish.touchinput.radial.sensors.TiltConfiguration
+import androidx.lifecycle.lifecycleScope
+import com.swordfish.touchinput.radial.settings.TouchControllerID
+import com.swordfish.touchinput.radial.settings.TouchControllerSettingsManager
+import kotlinx.coroutines.launch
 import java.security.InvalidParameterException
 import javax.inject.Inject
 
@@ -142,6 +146,8 @@ class GameMenuActivity : RetrogradeComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
     private fun GameMenuScreen(gameMenuRequest: GameMenuRequest) {
         AppTheme {
             val navController = rememberNavController()
@@ -152,6 +158,10 @@ class GameMenuActivity : RetrogradeComponentActivity() {
                 currentDestination?.route
                     ?.let { GameMenuRoute.findByRoute(it) }
                     ?: GameMenuRoute.HOME
+
+            val touchControllerSettingsManager = remember {
+                TouchControllerSettingsManager(getSharedPreferences("lemuroid", MODE_PRIVATE))
+            }
 
             SideMenu {
                 TopAppBar(
@@ -235,7 +245,32 @@ class GameMenuActivity : RetrogradeComponentActivity() {
                     composable(GameMenuRoute.LAYOUT) {
                         com.swordfish.lemuroid.app.mobile.feature.gamemenu.layout.GameMenuLayoutScreen(
                             gameMenuRequest,
-                            ::onResult
+                            onSettingsParamsChanged = { scale, opacity ->
+                                // Update settings directly for live preview
+                                val controllerId = intent.getStringExtra(GameMenuContract.EXTRA_CONTROLLER_ID)
+                                    ?.let { TouchControllerID.valueOf(it) } ?: TouchControllerID.GB
+                                val orientation = intent.getSerializableExtra(GameMenuContract.EXTRA_SCREEN_ORIENTATION) as? TouchControllerSettingsManager.Orientation
+                                    ?: TouchControllerSettingsManager.Orientation.PORTRAIT
+
+                                lifecycleScope.launch {
+                                    val currentSettings = touchControllerSettingsManager.getCurrentSettings(controllerId, orientation)
+                                    touchControllerSettingsManager.storeSettings(
+                                        controllerId,
+                                        orientation,
+                                        currentSettings.copy(scale = scale, opacity = opacity)
+                                    )
+                                }
+                                
+                                // Also report back to activity on exit if needed, but live update makes it redundant for persistence.
+                                // However, BaseGameActivity might need to know to refresh its view model state if it doesn't observe purely.
+                                // But strictly speaking, if SettingsManager updates SharedPreferences, and the Game observes SharedPreferences, it should be fine.
+                                // For good measure, we can still set the result params so BaseGameActivity updates its local cache immediately if needed.
+                                onResult {
+                                    putExtra(GameMenuContract.RESULT_CHANGE_LAYOUT_SETTINGS, true)
+                                    putExtra(GameMenuContract.EXTRA_CONTROLS_SCALE, scale)
+                                    putExtra(GameMenuContract.EXTRA_CONTROLS_OPACITY, opacity)
+                                }
+                            }
                         )
                     }
                 }

@@ -18,7 +18,7 @@ import com.swordfish.lemuroid.app.shared.GameMenuContract
 @Composable
 fun GameMenuLayoutScreen(
     gameMenuRequest: GameMenuActivity.GameMenuRequest,
-    onResult: (android.content.Intent.() -> Unit) -> Unit,
+    onSettingsParamsChanged: (Float, Float) -> Unit,
 ) {
     val scale = remember { mutableFloatStateOf(gameMenuRequest.controlsScale) }
     val opacity = remember { mutableFloatStateOf(gameMenuRequest.controlsOpacity) }
@@ -42,11 +42,7 @@ fun GameMenuLayoutScreen(
                     value = scale.floatValue,
                     onValueChange = {
                         scale.floatValue = it
-                        onResult {
-                            putExtra(GameMenuContract.RESULT_CHANGE_LAYOUT_SETTINGS, true)
-                            putExtra(GameMenuContract.EXTRA_CONTROLS_SCALE, it)
-                            putExtra(GameMenuContract.EXTRA_CONTROLS_OPACITY, opacity.floatValue)
-                        }
+                        onSettingsParamsChanged(it, opacity.floatValue)
                     },
                     valueRange = 0.2f..2.0f,
                     steps = 17
@@ -64,11 +60,7 @@ fun GameMenuLayoutScreen(
                     value = opacity.floatValue,
                     onValueChange = {
                         opacity.floatValue = it
-                        onResult {
-                            putExtra(GameMenuContract.RESULT_CHANGE_LAYOUT_SETTINGS, true)
-                            putExtra(GameMenuContract.EXTRA_CONTROLS_SCALE, scale.floatValue)
-                            putExtra(GameMenuContract.EXTRA_CONTROLS_OPACITY, it)
-                        }
+                        onSettingsParamsChanged(scale.floatValue, it)
                     },
                     valueRange = 0.1f..1.0f,
                     steps = 9

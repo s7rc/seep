@@ -112,6 +112,14 @@ class GameViewModelTouchControls(
         screenOrientation.value = orientation
     }
 
+    fun getTouchControllerId(): TouchControllerID {
+        return touchControlId.value
+    }
+
+    fun getScreenOrientation(): TouchControllerSettingsManager.Orientation {
+        return screenOrientation.value
+    }
+
     fun isTouchControllerVisible(): Flow<Boolean> {
         return inputs.getEnabledInputDevices()
             .map { it.isEmpty() }
