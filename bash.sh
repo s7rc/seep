@@ -12,67 +12,68 @@ NICK="Guest$(date +%s | tail -c 4)"
 echo "Connecting as $NICK..."
 
 # 3. Create the Expect script
-# We enable 'log_file' to dump everything to disk.
 cat <<EOF > irc_bot.exp
+# Log everything to file
 log_file -noappend session_dump.log
 set timeout 60
 spawn openssl s_client -connect $SERVER:$PORT -quiet
 
-# Login Fast
-sleep 1
+# Login
+sleep 2
 send "NICK $NICK\r"
 send "USER $NICK 0 * :$NICK\r"
 
-# Handle the PING/PONG Check + Wait for Welcome
+# 4. Smart Wait Loop
+# We handle PINGs, wait for the MOTD to finish, then Join, then wait for Topic.
 expect {
+    # If server PINGs, we PONG
     -re "PING :(\[^\r\n]+)" {
         send "PONG :\$expect_out(1,string)\r"
         exp_continue
     }
-    "Welcome to the Orpheus IRC Network" {
+    # Code 376 = End of MOTD. Server is ready.
+    "376" {
         send "JOIN $CHAN\r"
+        exp_continue
+    }
+    # Code 332 = The Topic! We got it.
+    -re "332.*$CHAN.*:(.*)" {
+        # We don't need to do anything else, the log_file has captured it.
+        send "QUIT\r"
+        exit 0
+    }
+    # Code 433 = Nickname in use (Just in case)
+    "433" {
+        send "NICK ${NICK}_\r"
+        exp_continue
     }
     timeout {
+        # If we waited 60s and never saw code 332
         exit 1
     }
 }
-
-# Once we send JOIN, we just wait 10 seconds to collect all data
-# We don't try to parse it here. We just let it fill the log file.
-sleep 10
-send "QUIT\r"
-exit 0
 EOF
 
-# 4. Run it
+# 5. Run it
 expect irc_bot.exp > /dev/null
 
-# 5. PARSE THE FILE
-if [ ! -f "session_dump.log" ]; then
-    echo "❌ FATAL: No log file generated."
-    exit 0
-fi
-
-# We look for code 332 (The Topic Code) specifically
+# 6. Check the log file
 TOPIC_LINE=$(grep " 332 " session_dump.log)
 
-# If 332 isn't found, look for "Topic for"
+echo "--- CHECKING LOGS ---"
 if [ -z "$TOPIC_LINE" ]; then
+    # Fallback: check for human readable text
     TOPIC_LINE=$(grep "Topic for" session_dump.log)
 fi
 
-echo "--- RAW TOPIC LINE ---"
-echo "$TOPIC_LINE"
-echo "----------------------"
+echo "Captured: $TOPIC_LINE"
 
 if [ -z "$TOPIC_LINE" ]; then
-    echo "⚠️ ERROR: Could not find topic in the logs."
-    echo "Here is the last thing the server said:"
-    tail -n 5 session_dump.log
+    echo "❌ ERROR: Connected, but Topic never arrived."
     exit 0
 fi
 
-# 6. Check Status
+# 7. Final Status Check
 if echo "$TOPIC_LINE" | grep -qi "OPEN"; then
     echo "✅ STATUS: OPEN! (Triggering Notification)"
     exit 1
@@ -80,6 +81,6 @@ elif echo "$TOPIC_LINE" | grep -qi "CLOSED"; then
     echo "❌ STATUS: CLOSED."
     exit 0
 else
-    echo "⚠️ STATUS: Unknown. (Topic captured, but keywords missing)"
+    echo "⚠️ STATUS: Unknown (Topic found, but keywords missing)."
     exit 0
 fi
