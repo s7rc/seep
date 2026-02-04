@@ -1,51 +1,62 @@
 #!/bin/bash
 
-# 1. Install 'expect' (Standard tool for automating interactive shells)
+# 1. Install 'expect' if missing
 sudo apt-get -y install expect > /dev/null 2>&1
 
-# 2. Configure
+# 2. Config
 SERVER="irc.orpheus.network"
 PORT="7000"
 CHAN="#recruitment"
-NICK="Guest$(date +%s | tail -c 3)"
+# Use a random number to avoid "Nick already in use" errors
+NICK="Guest$(date +%s | tail -c 4)"
 
-echo "Connecting as $NICK using Expect..."
+echo "Connecting as $NICK..."
 
-# 3. Create the automation script on the fly
+# 3. Create the Expect script
 cat <<EOF > irc_bot.exp
 set timeout 60
-# Connect securely
 spawn openssl s_client -connect $SERVER:$PORT -quiet
-# Wait for SSL handshake to finish
-expect "Verify return code"
-sleep 2
 
-# Send Login
+# DO NOT WAIT. Send login immediately to beat the timeout.
+sleep 1
 send "NICK $NICK\r"
 send "USER $NICK 0 * :$NICK\r"
 
-# WAIT for the server to explicitly welcome us (No more guessing seconds!)
-expect "Welcome to the Orpheus IRC Network"
+# NOW we wait for the server to let us in
+expect {
+    "Welcome to the Orpheus IRC Network" {
+        send "JOIN $CHAN\r"
+    }
+    timeout {
+        puts "Error: Timed out waiting for Welcome message."
+        exit 1
+    }
+}
 
-# Now that we are confirmed inside, JOIN immediately
-send "JOIN $CHAN\r"
-
-# Wait for the Topic code (332)
+# Wait for the topic (Code 332)
 expect {
     -re "332.*$CHAN.*:(.*)" {
-        # We captured the topic! Save it to a file.
         set topic \$expect_out(1,string)
+        # Write topic to file
         set fh [open "topic_result.txt" w]
         puts \$fh "\$topic"
         close \$fh
         send "QUIT\r"
         exit 0
     }
+    "Interviews are CLOSED" {
+         # Sometimes it appears in the text without the 332 code
+         set fh [open "topic_result.txt" w]
+         puts \$fh "CLOSED"
+         close \$fh
+         send "QUIT\r"
+         exit 0
+    }
     timeout {
+        puts "Error: Timed out waiting for TOPIC."
         exit 1
     }
 }
-expect eof
 EOF
 
 # 4. Run it
@@ -54,18 +65,17 @@ expect irc_bot.exp > debug_log.txt
 # 5. Check the result
 if [ -f "topic_result.txt" ]; then
     TOPIC=$(cat topic_result.txt)
-    echo "✅ SUCCESS! Topic Found: $TOPIC"
+    echo "CAPTURED TOPIC: $TOPIC"
     
     if echo "$TOPIC" | grep -qi "OPEN"; then
-        echo "STATUS: OPEN! (Triggering Alert)"
+        echo "✅ STATUS: OPEN! (Triggering Notification)"
         exit 1
     else
-        echo "STATUS: CLOSED."
+        echo "❌ STATUS: CLOSED."
         exit 0
     fi
 else
-    echo "❌ FAILURE. Could not capture topic."
-    echo "--- DEBUG LOG ---"
+    echo "⚠️ FAILED. Here is the debug log:"
     cat debug_log.txt
     exit 0
 fi
