@@ -1,4 +1,4 @@
-name: Orpheus Irssi Check
+name: shit...
 on:
   schedule:
     - cron: '0 */2 * * *' # Every 2 hours
@@ -11,8 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Irssi
-        run: sudo apt-get update && sudo apt-get install -y weechat-headless
+
 
       - name: Run Check
         run: |
