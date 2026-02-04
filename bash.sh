@@ -1,68 +1,67 @@
 #!/bin/bash
 
-# 1. Install 'expect' if missing
+# 1. Install Expect
 sudo apt-get -y install expect > /dev/null 2>&1
 
 # 2. Config
 SERVER="irc.orpheus.network"
 PORT="7000"
 CHAN="#recruitment"
-# Use a random number to avoid "Nick already in use" errors
 NICK="Guest$(date +%s | tail -c 4)"
 
 echo "Connecting as $NICK..."
 
-# 3. Create the Expect script
+# 3. Generate the Script
 cat <<EOF > irc_bot.exp
 set timeout 60
 spawn openssl s_client -connect $SERVER:$PORT -quiet
 
-# DO NOT WAIT. Send login immediately to beat the timeout.
+# Send Identity immediately
 sleep 1
 send "NICK $NICK\r"
 send "USER $NICK 0 * :$NICK\r"
 
-# NOW we wait for the server to let us in
+# 4. THE CRITICAL PART: Handle the PING/PONG loop
+# We wait for EITHER a "PING" or "Welcome".
 expect {
+    # If server sends PING :12345, we MUST send PONG :12345
+    -re "PING :(\[^\r\n]+)" {
+        send "PONG :\$expect_out(1,string)\r"
+        # 'exp_continue' means "Okay, I handled the PING, now go back to waiting for Welcome"
+        exp_continue
+    }
     "Welcome to the Orpheus IRC Network" {
+        # Success! We are in.
         send "JOIN $CHAN\r"
     }
     timeout {
-        puts "Error: Timed out waiting for Welcome message."
+        puts "Error: Timed out waiting for PING or Welcome."
         exit 1
     }
 }
 
-# Wait for the topic (Code 332)
+# 5. Get the Topic
 expect {
     -re "332.*$CHAN.*:(.*)" {
         set topic \$expect_out(1,string)
-        # Write topic to file
         set fh [open "topic_result.txt" w]
         puts \$fh "\$topic"
         close \$fh
         send "QUIT\r"
         exit 0
     }
-    "Interviews are CLOSED" {
-         # Sometimes it appears in the text without the 332 code
-         set fh [open "topic_result.txt" w]
-         puts \$fh "CLOSED"
-         close \$fh
-         send "QUIT\r"
-         exit 0
-    }
     timeout {
         puts "Error: Timed out waiting for TOPIC."
         exit 1
     }
 }
+expect eof
 EOF
 
-# 4. Run it
+# 6. Run it
 expect irc_bot.exp > debug_log.txt
 
-# 5. Check the result
+# 7. Check Result
 if [ -f "topic_result.txt" ]; then
     TOPIC=$(cat topic_result.txt)
     echo "CAPTURED TOPIC: $TOPIC"
@@ -75,7 +74,7 @@ if [ -f "topic_result.txt" ]; then
         exit 0
     fi
 else
-    echo "⚠️ FAILED. Here is the debug log:"
+    echo "⚠️ FAILED. Debug Log:"
     cat debug_log.txt
     exit 0
 fi
