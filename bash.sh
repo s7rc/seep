@@ -8,39 +8,35 @@ CHAN="#recruitment"
 
 echo "Connecting as $NICK..."
 
-# We set logging to 'on' and tell weechat exactly where to save it
-weechat-headless -d . -r "/set logger.file.path '.'; \
-/set logger.level.irc 4; \
+# Force WeeChat to log EVERYTHING to a single file immediately
+# We use 'timeout' to make sure the process stays open for 30 seconds
+timeout 30s weechat-headless -d . -r "/set logger.file.path '.'; \
+/set logger.mask.irc 'irc_debug.log'; \
 /server add orp $SERVER/$PORT -ssl; \
 /set irc.server.orp.nicks $NICK; \
 /connect orp; \
-/wait 15s /topic $CHAN; \
+/wait 20s /topic $CHAN; \
 /wait 5s /quit" > /dev/null 2>&1
 
-# WeeChat creates log files based on the server/channel name
-# Usually 'irc.orp.#recruitment.weechatlog' or 'irc.server.orp.weechatlog'
-LOG_FILE=$(ls *.weechatlog 2>/dev/null | head -n 1)
-
-if [ -z "$LOG_FILE" ]; then
-    echo "--- DEBUG INFO ---"
-    echo "No log file found. Let's see what files exist:"
+# Check if the debug log exists
+if [ ! -f "irc_debug.log" ]; then
+    echo "ERROR: No log file generated. WeeChat failed to start."
     ls -a
-    echo "------------------"
-    echo "RESULT: Connection failed or timed out."
     exit 0
 fi
 
-echo "--- IRC LOG OUTPUT ($LOG_FILE) ---"
-cat "$LOG_FILE"
-echo "--- END LOG ---"
+echo "--- FULL IRC TRAFFIC ---"
+cat irc_debug.log
+echo "--- END TRAFFIC ---"
 
-if grep -qi "OPEN" "$LOG_FILE"; then
+# Look for the status
+if grep -qi "OPEN" irc_debug.log; then
     echo "RESULT: IT IS OPEN!!"
     exit 1
-elif grep -qi "CLOSED" "$LOG_FILE"; then
+elif grep -qi "CLOSED" irc_debug.log; then
     echo "RESULT: Still Closed."
     exit 0
 else
-    echo "RESULT: Unknown status (Check the log above)."
+    echo "RESULT: Could not find topic in the logs. Check if blocked."
     exit 0
 fi
