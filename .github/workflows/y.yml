@@ -1,8 +1,8 @@
-name: Orpheus Status Check
+name: Orpheus Irssi Check
 on:
   schedule:
-    - cron: '0 */2 * * *'  # Runs every 2 hours
-  workflow_dispatch:       # Allows you to click "Run workflow" manually
+    - cron: '0 */2 * * *' # Every 2 hours
+  workflow_dispatch:
 
 jobs:
   check-irc:
@@ -10,6 +10,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Irssi
+        run: sudo apt-get update && sudo apt-get install -y irssi
 
       - name: Run Check
         run: |
