@@ -8,35 +8,46 @@ CHAN="#recruitment"
 
 echo "Connecting as $NICK..."
 
-# Force WeeChat to log EVERYTHING to a single file immediately
-# We use 'timeout' to make sure the process stays open for 30 seconds
-timeout 30s weechat-headless -d . -r "/set logger.file.path '.'; \
+# We use -r to run commands. 
+# 1. Connect
+# 2. Wait 10 seconds (important for the server to stabilize)
+# 3. Send raw TOPIC command
+# 4. Wait 5 seconds for the reply
+# 5. Quit
+timeout 40s weechat-headless -d . -r "/set logger.file.path '.'; \
 /set logger.mask.irc 'irc_debug.log'; \
 /server add orp $SERVER/$PORT -ssl; \
 /set irc.server.orp.nicks $NICK; \
 /connect orp; \
-/wait 20s /topic $CHAN; \
-/wait 5s /quit" > /dev/null 2>&1
+/wait 10s /raw TOPIC $CHAN; \
+/wait 10s /quit" > /dev/null 2>&1
 
-# Check if the debug log exists
 if [ ! -f "irc_debug.log" ]; then
-    echo "ERROR: No log file generated. WeeChat failed to start."
-    ls -a
+    echo "ERROR: No log file generated."
     exit 0
 fi
 
-echo "--- FULL IRC TRAFFIC ---"
+echo "--- IRC TRAFFIC ---"
+# We filter for the topic line (332 is the IRC code for topic)
 cat irc_debug.log
 echo "--- END TRAFFIC ---"
 
-# Look for the status
-if grep -qi "OPEN" irc_debug.log; then
-    echo "RESULT: IT IS OPEN!!"
-    exit 1
-elif grep -qi "CLOSED" irc_debug.log; then
-    echo "RESULT: Still Closed."
-    exit 0
+# Logic: Check if CLOSED is missing OR if OPEN is present
+if grep -q "332" irc_debug.log; then
+    TOPIC_LINE=$(grep "332" irc_debug.log)
+    echo "FOUND TOPIC LINE: $TOPIC_LINE"
+    
+    if echo "$TOPIC_LINE" | grep -qi "OPEN"; then
+        echo "RESULT: IT IS OPEN!!"
+        exit 1
+    elif echo "$TOPIC_LINE" | grep -qi "CLOSED"; then
+        echo "RESULT: Still Closed."
+        exit 0
+    else
+        echo "RESULT: Topic found but status unclear."
+        exit 0
+    fi
 else
-    echo "RESULT: Could not find topic in the logs. Check if blocked."
+    echo "RESULT: Could not find the topic line in logs."
     exit 0
 fi
