@@ -1,0 +1,17 @@
+name: Orpheus Status Check
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # Runs every 2 hours
+  workflow_dispatch:       # Allows you to click "Run workflow" manually
+
+jobs:
+  check-irc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Check
+        run: |
+          chmod +x check_orpheus.sh
+          ./check_orpheus.sh
