@@ -13,5 +13,5 @@ jobs:
 
       - name: Run Check
         run: |
-          chmod +x check_orpheus.sh
-          ./check_orpheus.sh
+          chmod +x bash.sh
+          ./bash.sh
