@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Irssi
-        run: sudo apt-get update && sudo apt-get install -y irssi
+        run: sudo apt-get update && sudo apt-get install -y weechat-headless
 
       - name: Run Check
         run: |
