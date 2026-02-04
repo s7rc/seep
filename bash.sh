@@ -8,22 +8,36 @@ CHAN="#recruitment"
 
 echo "Connecting as $NICK..."
 
-# We add 'head -n 100' to capture enough of the start of the session
-weechat-headless -d . -r "/server add orp $SERVER/$PORT -ssl; \
+# We set logging to 'on' and tell weechat exactly where to save it
+weechat-headless -d . -r "/set logger.file.path '.'; \
+/set logger.level.irc 4; \
+/server add orp $SERVER/$PORT -ssl; \
 /set irc.server.orp.nicks $NICK; \
 /connect orp; \
 /wait 15s /topic $CHAN; \
-/wait 5s /quit" > irc_output.log 2>&1
+/wait 5s /quit" > /dev/null 2>&1
 
-# Show the log in the GitHub console so we can see what happened
-echo "--- IRC LOG OUTPUT ---"
-cat irc_output.log
+# WeeChat creates log files based on the server/channel name
+# Usually 'irc.orp.#recruitment.weechatlog' or 'irc.server.orp.weechatlog'
+LOG_FILE=$(ls *.weechatlog 2>/dev/null | head -n 1)
+
+if [ -z "$LOG_FILE" ]; then
+    echo "--- DEBUG INFO ---"
+    echo "No log file found. Let's see what files exist:"
+    ls -a
+    echo "------------------"
+    echo "RESULT: Connection failed or timed out."
+    exit 0
+fi
+
+echo "--- IRC LOG OUTPUT ($LOG_FILE) ---"
+cat "$LOG_FILE"
 echo "--- END LOG ---"
 
-if grep -qi "OPEN" irc_output.log; then
+if grep -qi "OPEN" "$LOG_FILE"; then
     echo "RESULT: IT IS OPEN!!"
     exit 1
-elif grep -qi "CLOSED" irc_output.log; then
+elif grep -qi "CLOSED" "$LOG_FILE"; then
     echo "RESULT: Still Closed."
     exit 0
 else
