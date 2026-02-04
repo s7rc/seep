@@ -1,35 +1,32 @@
 #!/bin/bash
 
-# Real-looking Nicks
 NICKS=("Alex_92" "Jordan_M" "Chris_P" "Sam_K88" "Taylor_V" "Morgan_Z" "Casey_J")
 NICK=${NICKS[$RANDOM % ${#NICKS[@]}]}
 SERVER="irc.orpheus.network"
 PORT=7000
 CHAN="#recruitment"
 
-echo "Connecting as $NICK using WeeChat..."
+echo "Connecting as $NICK..."
 
-# Run WeeChat with specific commands
-# We tell it to connect via SSL, join the channel, wait, then quit.
-weechat -d . -r "/server add orp $SERVER/$PORT -ssl; \
+# We add 'head -n 100' to capture enough of the start of the session
+weechat-headless -d . -r "/server add orp $SERVER/$PORT -ssl; \
 /set irc.server.orp.nicks $NICK; \
 /connect orp; \
-/wait 10s /join $CHAN; \
-/wait 5s /print \${buffer.title}; \
-/wait 2s /quit" > raw_output.txt 2>&1
+/wait 15s /topic $CHAN; \
+/wait 5s /quit" > irc_output.log 2>&1
 
-# WeeChat logs the buffer title (which is the topic) to the output.
-# We check if 'OPEN' is in the resulting log.
-if grep -qi "OPEN" raw_output.txt; then
-    echo "MATCH FOUND: Recruitment is OPEN!"
+# Show the log in the GitHub console so we can see what happened
+echo "--- IRC LOG OUTPUT ---"
+cat irc_output.log
+echo "--- END LOG ---"
+
+if grep -qi "OPEN" irc_output.log; then
+    echo "RESULT: IT IS OPEN!!"
     exit 1
-elif grep -qi "CLOSED" raw_output.txt; then
-    echo "Status: Still CLOSED."
+elif grep -qi "CLOSED" irc_output.log; then
+    echo "RESULT: Still Closed."
     exit 0
 else
-    echo "--- LOG START ---"
-    cat raw_output.txt
-    echo "--- LOG END ---"
-    echo "Error: Could not determine topic. Check logs above."
+    echo "RESULT: Unknown status (Check the log above)."
     exit 0
 fi
