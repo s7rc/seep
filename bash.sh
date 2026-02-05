@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 1. Install Expect (Standard Linux tool, lighter than WeeChat)
+# 1. Install Expect
 sudo apt-get -y install expect > /dev/null 2>&1
 
 # 2. Config
@@ -9,40 +9,35 @@ PORT="7000"
 CHAN="#recruitment"
 NICK="Guest$(date +%s | tail -c 4)"
 
-# Your Discord Webhook URL
+# Discord Webhook URLs
 WEBHOOK_URL="https://discord.com/api/webhooks/1468585146440618132/di6o9HhZnbCHfif-JQXvdjXsboYO9xm6B1K04RD_aSMgJdbJ41gJNJkSlMHUp31WCfiE"
+LOGS_WEBHOOK_URL="https://discord.com/api/webhooks/1468924589051478138/e1R_s1KGA2wkTHADwgkhHlUl86n44vnqKJEWKLG_Z2JZjmUWLDbKKoO3cRXstgVDPcid"
 
 echo "Connecting as $NICK..."
 
-# 3. Create the Expect script (Handles the login & PING/PONG)
+# 3. Create the Expect script
 cat <<EOF > irc_bot.exp
 log_file -noappend session_dump.log
 set timeout 60
 spawn openssl s_client -connect $SERVER:$PORT -quiet
 
-# Login
 sleep 2
 send "NICK $NICK\r"
 send "USER $NICK 0 * :$NICK\r"
 
-# Smart Wait Loop
 expect {
-    # If server PINGs, we PONG to stay alive
     -re "PING :(\[^\r\n]+)" {
         send "PONG :\$expect_out(1,string)\r"
         exp_continue
     }
-    # Code 376 = End of MOTD (Welcome message done)
     "376" {
         send "JOIN $CHAN\r"
         exp_continue
     }
-    # Code 332 = The Topic! We got it.
     -re "332.*$CHAN.*:(.*)" {
         send "QUIT\r"
         exit 0
     }
-    # Code 433 = Nickname in use (Retry with underscore)
     "433" {
         send "NICK ${NICK}_\r"
         exp_continue
@@ -62,8 +57,8 @@ if [ -z "$TOPIC_LINE" ]; then
     TOPIC_LINE=$(grep "Topic for" session_dump.log)
 fi
 
-# Clean up the text (Remove the timestamp/IP junk)
-CLEAN_TOPIC=$(echo "$TOPIC_LINE" | sed 's/.*332.*://' | sed 's/.*Topic for.*://')
+# Clean up the text
+CLEAN_TOPIC=$(echo "$TOPIC_LINE" | sed 's/.*332.*://' | sed 's/.*Topic for.*://' | tr -d '\r')
 
 echo "--- CAPTURED TOPIC ---"
 echo "$CLEAN_TOPIC"
@@ -74,22 +69,42 @@ if [ -z "$CLEAN_TOPIC" ]; then
     exit 0
 fi
 
-# 6. LOGIC: ONLY trigger if it explicitly says "Interviews are OPEN"
+# 6. LOGIC
 if echo "$CLEAN_TOPIC" | grep -qi "Interviews are OPEN"; then
     echo "✅ STATUS: OPEN! Sending Discord Ping..."
     
-    # Send Notification with @everyone to ping you
+    # Send Notification to Main Channel with @everyone
     curl -H "Content-Type: application/json" \
          -X POST \
-         -d "{\"content\": \"@everyone 🚨 **ORPHEUS INTERVIEWS ARE OPEN!** 🚨\n\n**Topic:** $CLEAN_TOPIC\n\nGO GO GO!\"}" \
+         -d "{\"content\": \"@everyone 🚨 **ORPHEUS INTERVIEWS ARE OPEN!** 🚨\n\n**Topic:** $CLEAN_TOPIC\"}" \
          "$WEBHOOK_URL"
+    
+    # Also log it to the all-logs channel
+    curl -H "Content-Type: application/json" \
+         -X POST \
+         -d "{\"content\": \"✅ **LOG:** Status is OPEN\n$CLEAN_TOPIC\"}" \
+         "$LOGS_WEBHOOK_URL"
          
-    exit 1 # Exit 1 triggers the GitHub "Failure" mark so you see it in the list
+    exit 1 
     
 elif echo "$CLEAN_TOPIC" | grep -qi "Interviews are CLOSED"; then
-    echo "❌ STATUS: CLOSED. (Correctly detected)"
+    echo "❌ STATUS: CLOSED. Sending log..."
+    
+    # Send to the logs channel only
+    curl -H "Content-Type: application/json" \
+         -X POST \
+         -d "{\"content\": \"⚪ **Status Check:** Interviews are **CLOSED**.\n**Topic:** $CLEAN_TOPIC\"}" \
+         "$LOGS_WEBHOOK_URL"
+
     exit 0
 else
-    echo "⚠️ STATUS: Unknown (Keywords missing, not risking a false alarm)."
+    echo "⚠️ STATUS: Unknown. Sending log..."
+    
+    # Log unknown status so you can see if the formatting changed
+    curl -H "Content-Type: application/json" \
+         -X POST \
+         -d "{\"content\": \"⚠️ **Status Unknown:** Could not find OPEN/CLOSED keywords.\n**Raw Topic:** $CLEAN_TOPIC\"}" \
+         "$LOGS_WEBHOOK_URL"
+         
     exit 0
 fi
