@@ -7,7 +7,11 @@ sudo apt-get -y install expect > /dev/null 2>&1
 SERVER="irc.orpheus.network"
 PORT="7000"
 CHAN="#recruitment"
-NICK="Guest$(date +%s | tail -c 4)"
+
+# Randomized Nicknames to look less like a bot
+NICKS=("user" "node" "linux" "alpha" "zeta" "ocean" "river" "cloud")
+RANDOM_NICK=${NICKS[$RANDOM % ${#NICKS[@]}]}
+NICK="${RANDOM_NICK}$(date +%s | tail -c 3)"
 
 # Discord Webhook URLs
 WEBHOOK_URL="https://discord.com/api/webhooks/1468585146440618132/di6o9HhZnbCHfif-JQXvdjXsboYO9xm6B1K04RD_aSMgJdbJ41gJNJkSlMHUp31WCfiE"
@@ -57,7 +61,6 @@ if [ -z "$TOPIC_LINE" ]; then
     TOPIC_LINE=$(grep "Topic for" session_dump.log)
 fi
 
-# Clean up the text
 CLEAN_TOPIC=$(echo "$TOPIC_LINE" | sed 's/.*332.*://' | sed 's/.*Topic for.*://' | tr -d '\r')
 
 echo "--- CAPTURED TOPIC ---"
@@ -65,21 +68,20 @@ echo "$CLEAN_TOPIC"
 echo "----------------------"
 
 if [ -z "$CLEAN_TOPIC" ]; then
-    echo "⚠️ ERROR: Connected, but Topic never arrived."
+    echo "⚠️ ERROR: Topic empty or connection failed."
     exit 0
 fi
 
 # 6. LOGIC
 if echo "$CLEAN_TOPIC" | grep -qi "Interviews are OPEN"; then
-    echo "✅ STATUS: OPEN! Sending Discord Ping..."
+    echo "✅ STATUS: OPEN!"
     
-    # Send Notification to Main Channel with @everyone
+    # This pings @everyone in your main channel
     curl -H "Content-Type: application/json" \
          -X POST \
          -d "{\"content\": \"@everyone 🚨 **ORPHEUS INTERVIEWS ARE OPEN!** 🚨\n\n**Topic:** $CLEAN_TOPIC\"}" \
          "$WEBHOOK_URL"
     
-    # Also log it to the all-logs channel
     curl -H "Content-Type: application/json" \
          -X POST \
          -d "{\"content\": \"✅ **LOG:** Status is OPEN\n$CLEAN_TOPIC\"}" \
@@ -88,22 +90,21 @@ if echo "$CLEAN_TOPIC" | grep -qi "Interviews are OPEN"; then
     exit 1 
     
 elif echo "$CLEAN_TOPIC" | grep -qi "Interviews are CLOSED"; then
-    echo "❌ STATUS: CLOSED. Sending log..."
+    echo "❌ STATUS: CLOSED."
     
-    # Send to the logs channel only
+    # Log to #all-logs with a red circle
     curl -H "Content-Type: application/json" \
          -X POST \
-         -d "{\"content\": \"⚪ **Status Check:** Interviews are **CLOSED**.\n**Topic:** $CLEAN_TOPIC\"}" \
+         -d "{\"content\": \"🔴 **Status Check:** Interviews are **CLOSED**.\n**Topic:** $CLEAN_TOPIC\"}" \
          "$LOGS_WEBHOOK_URL"
 
     exit 0
 else
-    echo "⚠️ STATUS: Unknown. Sending log..."
+    echo "⚠️ STATUS: Unknown."
     
-    # Log unknown status so you can see if the formatting changed
     curl -H "Content-Type: application/json" \
          -X POST \
-         -d "{\"content\": \"⚠️ **Status Unknown:** Could not find OPEN/CLOSED keywords.\n**Raw Topic:** $CLEAN_TOPIC\"}" \
+         -d "{\"content\": \"⚠️ **Status Unknown:**\n**Raw Topic:** $CLEAN_TOPIC\"}" \
          "$LOGS_WEBHOOK_URL"
          
     exit 0
