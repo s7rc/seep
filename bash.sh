@@ -86,6 +86,12 @@ if echo "$CLEAN_TOPIC" | grep -qi "Interviews are OPEN"; then
          -X POST \
          -d "{\"content\": \"✅ **LOG:** Status is OPEN\n$CLEAN_TOPIC\"}" \
          "$LOGS_WEBHOOK_URL"
+
+    # GNOME desktop notification via ntfy
+    curl -H "Title: Orpheus Interviews OPEN" \
+         -H "Priority: high" \
+         -d "$CLEAN_TOPIC" \
+         "ntfy.sh/discord-alerts-x7k2p9"
          
     exit 1 
     
@@ -98,6 +104,11 @@ elif echo "$CLEAN_TOPIC" | grep -qi "Interviews are CLOSED"; then
          -d "{\"content\": \"🔴 **Status Check:** Interviews are **CLOSED**.\n**Topic:** $CLEAN_TOPIC\"}" \
          "$LOGS_WEBHOOK_URL"
 
+    # GNOME desktop notification via ntfy
+    curl -H "Title: Orpheus Interviews CLOSED" \
+         -d "$CLEAN_TOPIC" \
+         "ntfy.sh/discord-alerts-x7k2p9"
+
     exit 0
 else
     echo "⚠️ STATUS: Unknown."
@@ -106,6 +117,11 @@ else
          -X POST \
          -d "{\"content\": \"⚠️ **Status Unknown:**\n**Raw Topic:** $CLEAN_TOPIC\"}" \
          "$LOGS_WEBHOOK_URL"
+
+    # GNOME desktop notification via ntfy
+    curl -H "Title: Orpheus Status Unknown" \
+         -d "$CLEAN_TOPIC" \
+         "ntfy.sh/discord-alerts-x7k2p9"
          
     exit 0
 fi
