@@ -104,11 +104,6 @@ elif echo "$CLEAN_TOPIC" | grep -qi "Interviews are CLOSED"; then
          -d "{\"content\": \"🔴 **Status Check:** Interviews are **CLOSED**.\n**Topic:** $CLEAN_TOPIC\"}" \
          "$LOGS_WEBHOOK_URL"
 
-    # GNOME desktop notification via ntfy
-    curl -H "Title: Orpheus Interviews CLOSED" \
-         -d "$CLEAN_TOPIC" \
-         "ntfy.sh/discord-alerts-x7k2p9"
-
     exit 0
 else
     echo "⚠️ STATUS: Unknown."
@@ -117,10 +112,9 @@ else
          -X POST \
          -d "{\"content\": \"⚠️ **Status Unknown:**\n**Raw Topic:** $CLEAN_TOPIC\"}" \
          "$LOGS_WEBHOOK_URL"
-
-    # GNOME desktop notification via ntfy
-    curl -H "Title: Orpheus Status Unknown" \
-         -d "$CLEAN_TOPIC" \
+         
+    exit 0
+fi
          "ntfy.sh/discord-alerts-x7k2p9"
          
     exit 0
